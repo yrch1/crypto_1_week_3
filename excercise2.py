@@ -3,8 +3,8 @@ __author__ = 'yrch1'
 import os
 from Crypto.Hash import SHA256
 
-expected_h0 = '03c08f4ee0b576fe319338139c045c89c3e8e9409633bea29442e21425006ea8'
-5b96aece304a1422224f9a41b228416028f9ba26b0d1058f400200f06a589949
+check_video_h0 = '03c08f4ee0b576fe319338139c045c89c3e8e9409633bea29442e21425006ea8'
+expected_h0 = '5b96aece304a1422224f9a41b228416028f9ba26b0d1058f400200f06a589949'
 blockSize = 1024
 
 
@@ -29,14 +29,15 @@ def getBlocksCount(fileSize):
 def getNBlock(fileobject, n, blockCount, lastBlockSize):
 
     originalPosition = fileobject.tell()
-    if n < blockCount - 1:
-        ## FullBlock
-        fileobject.seek(n*blockSize, os.SEEK_SET) # move the cursor to the end of the file
-        data = fileobject.read(blockSize)
-    else:
+    if n == blockCount -1:
         ##Lasblock
         fileobject.seek(-lastBlockSize, os.SEEK_END) # move the cursor to the end of the file
         data = fileobject.read()
+    else:
+        ## FullBlock
+        fileobject.seek(n*blockSize, os.SEEK_SET) # move the cursor to the end of the file
+        data = fileobject.read(blockSize)
+
 
     fileobject.seek(originalPosition, os.SEEK_SET) # move the cursor to originalPosition
     return data
@@ -50,18 +51,15 @@ def readFile(filename):
         blockCount = getBlocksCount(fileSize)
         lastBlockSize = getSizeLastChunk(fileSize)
 
-        lastBlockHex = getNBlock(fileObject, blockCount,blockCount,lastBlockSize)
-        h.update(lastBlockHex)
-        hn = h.hexdigest()
-        for i in range(blockCount-1,0,-1):
-            blockData = getNBlock(fileObject, blockCount,blockCount,lastBlockSize).encode(hex)
-            h.update(blockData+hn)
-            hn = h.hexdigest()
-
-        print hn
-
-
-    return
+        hn = ''
+        for n in range(blockCount-1,-1,-1):
+            blockData = getNBlock(fileObject, n,blockCount,lastBlockSize)
+            sha = SHA256.new()
+            sha.update(blockData)
+            if(hn):
+                sha.update(hn)
+            hn = sha.digest()
+    return hn
 
 
 
@@ -70,7 +68,9 @@ def readFile(filename):
 if __name__ == "__main__":
 
     print __author__
-    readFile("./resources/6 - 2 - Generic birthday attack (16 min).mp4")
 
+    mac = readFile("./resources/6 - 1 - Introduction (11 min).mp4")
+    print mac.encode('hex')
+    print expected_h0
 
 
