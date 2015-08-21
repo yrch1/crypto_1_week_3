@@ -1,7 +1,7 @@
 __author__ = 'yrch1'
 
 import os
-import pycrypto
+from Crypto.Hash import SHA256
 
 expected_h0 = '03c08f4ee0b576fe319338139c045c89c3e8e9409633bea29442e21425006ea8'
 blockSize = 1024
@@ -42,13 +42,22 @@ def getNBlock(fileobject, n, blockCount, lastBlockSize):
 
 
 def readFile(filename):
-    with open(filename, "rb") as fileobject:
-        fileSize = getSize(fileobject)
+
+    h = SHA256.new()
+    with open(filename, "rb") as fileObject:
+        fileSize = getSize(fileObject)
         blockCount = getBlocksCount(fileSize)
         lastBlockSize = getSizeLastChunk(fileSize)
 
-        for i in range(blockCount,0,-1):
-            print i
+        lastBlockHex = getNBlock(fileObject, blockCount,blockCount,lastBlockSize)
+        h.update(lastBlockHex)
+        hn = h.hexdigest()
+        for i in range(blockCount-1,0,-1):
+            blockData = getNBlock(fileObject, blockCount,blockCount,lastBlockSize).encode(hex)
+            h.update(blockData+hn)
+            hn = h.hexdigest()
+
+        print hn
 
 
     return
@@ -61,5 +70,6 @@ if __name__ == "__main__":
 
     print __author__
     readFile("./resources/6 - 2 - Generic birthday attack (16 min).mp4")
+
 
 
